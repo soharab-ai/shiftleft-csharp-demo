@@ -91,65 +91,67 @@ namespace netcoreWebapi.Controllers
             return Json("Not found");
         }
 
-        [HttpGet("Add")]
-        public JsonResult Get(string sql)
+[HttpGet("Add")]
+public JsonResult Get(string customerName, string customerEmail)
+{
+    if (!IsValidCustomerName(customerName))
+    {
+        return Json(new { Error = "Invalid input detected." });
+    }
+    
+    if (!IsValidEmail(customerEmail))
+    {
+        return Json(new { Error = "Invalid input detected." });
+    }
+
+    const string connection = @"Data Source=MyData;Initial Catalog=Product;User Id=app_user;Password=SecurePassword123!;";
+    
+    using (var conn = new SqlConnection(connection))
+    {
+        string query = "INSERT INTO customers (Name, Email) VALUES (@Name, @Email)";
+        using (var command = new SqlCommand(query, conn))
         {
-            const string connection = @"Data Source=MyData;Initial Catalog=Product;Trusted_Connection=true";
-            var conn = new SqlConnection(connection);
-            string query = "INSERT INTO customers " + sql;
-            var command = new SqlCommand(query, conn);
+            var nameParam = new SqlParameter("@Name", SqlDbType.NVarChar, 100) 
+            { 
+                Direction = ParameterDirection.Input,
+                Value = customerName 
+            };
+            var emailParam = new SqlParameter("@Email", SqlDbType.NVarChar, 100) 
+            { 
+                Direction = ParameterDirection.Input,
+                Value = customerEmail 
+            };
+            command.Parameters.Add(nameParam);
+            command.Parameters.Add(emailParam);
+            
+            conn.Open();
             int result = command.ExecuteNonQuery();
-            return Json(string.Format("Result: {0}", result));
-        }
+private bool IsValidCustomerName(string customerName)
+{
+    if (string.IsNullOrWhiteSpace(customerName))
+        return false;
+    
+    if (customerName.Length > 100)
+        return false;
+    
+    return Regex.IsMatch(customerName, @"^[a-zA-Z\s]+$");
+}
 
-        [HttpPost("xxeSafe")]
-        public JsonResult TextReaderSafe([FromBody] string xmldata)
-        {
-            /*
-            string xml = "<?xml version=\"1.0\" ?><!DOCTYPE doc  
-            [< !ENTITY win SYSTEM \"file:///C:/Users/user/Documents/testdata2.txt\">]
-            >< doc > &win;</ doc > ";
-            */
-
-            XmlTextReader myReader = new XmlTextReader(new StringReader(xmldata));
-            myReader.DtdProcessing = DtdProcessing.Prohibit;
-            while (myReader.Read())
-            {
-                if (myReader.NodeType == XmlNodeType.Element)
-                {
-                    //Console.WriteLine(myReader.ReadElementContentAsString());
-                    string data = myReader.ReadElementContentAsString();
-                }
-            }
-            return Json(string.Format("Xml Parsed!!"));
-        }
-
-        [HttpPost("xxe")]
-        public JsonResult TextReader([FromBody] string xmldata)
-        {
-            /*
-            string xml = "<?xml version=\"1.0\" ?><!DOCTYPE doc  
-            [< !ENTITY win SYSTEM \"file:///C:/Users/user/Documents/testdata2.txt\">]
-            >< doc > &win;</ doc > ";
-            */
 
             XmlTextReader myReader = new XmlTextReader(new StringReader(xmldata));
 
             while (myReader.Read())
-            {
-                if (myReader.NodeType == XmlNodeType.Element)
-                {
-                    //Console.WriteLine(myReader.ReadElementContentAsString());
-                    string data = myReader.ReadElementContentAsString();
-                }
-            }
-            return Json(string.Format("Xml Parsed!!"));
-        }
+private bool IsValidEmail(string customerEmail)
+{
+    if (string.IsNullOrWhiteSpace(customerEmail))
+        return false;
+    
+    if (customerEmail.Length > 100)
+        return false;
+    
+    return Regex.IsMatch(customerEmail, @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+}
 
-        [HttpGet("saveSettings")]
-        public JsonResult Get(string[] settingsFromClient)
-        {
-            string settingsCookie = Request.Cookies["saveSettings"];
             if (settingsCookie == null)
             {
                 return Json("Error. Cookie is incorrect.");
